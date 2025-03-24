@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#BSUB -n 1  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=2000] # ask for memory 5G
+#BSUB -W 24:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1-2]%50"
+#BSUB -q long  # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(195835)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+module load samtools/1.16.1
+module load seqtk
+
+
+out=test_data/resquiggle_data
+bam=(`ls test_data/dorado_basecalled/*.mapq60.bam`)
+fastq=(`ls test_data/dorado_basecalled/*_dorado.fastq`)
+name=(`ls  test_data/dorado_basecalled/*.mapq60.bam | perl -p -e 's{.+/(.+?).bam}{$1}'`)
+mkdir -p $out
+
+awk ' BEGIN{FS=OFS="\t"} !/^@/ {print $1} ' <(samtools view ${bam[$i]}) |sort -u | seqtk subseq ${fastq[$i]}   -  > $out/${name[$i]}.fastq

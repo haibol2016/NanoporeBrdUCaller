@@ -1,0 +1,30 @@
+#!/bin/bash
+
+#BSUB -n 1  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=1000] # ask for memory 5G
+#BSUB -W 4:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1-260]%50"
+#BSUB -q short   # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(33544)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+dir=(`ls data/000.single_fast5/batch*/0/ -d`)
+
+out=(`ls data/000.single_fast5/batch*/0/ -d | perl -p -e 's{data/000.single_fast5/(batch\d+)/0/}{data/005.valid.single_fast5/$1}'`)
+mkdir -p ${out[$i]}
+
+
+if [ -z "$(ls -A ${dir[$i]})" ]; then
+      echo "${dir[$i]} is empty"
+      #rm -rf ${dir[$i]}
+else
+
+ awk 'NR == FNR {a[$1] =0; next} { fname = gensub(/.+\/(.+)\.fast5/, "\\1", "g", $1); if (fname in a) {print  $1}}' \
+	 data/004.BSPS_BrdU_Q.len.filtered.5bc.5mer.fastq.id.list  <(ls ${dir[$i]}/*)  | xargs -I {} mv {} ${out[$i]}
+fi
+

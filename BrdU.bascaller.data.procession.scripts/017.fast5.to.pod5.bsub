@@ -1,0 +1,23 @@
+#!/bin/bash
+
+#BSUB -n 8  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=1000] # ask for memory 5G
+#BSUB -W 4:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1-2]%50"
+#BSUB -q short   # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(33544)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+module loa pod5/0.3.15
+fast5=(`ls test_data/*.fast5 `)
+name=(`ls test_data/*.fast5 | perl -p -es'{.+/(.+?).fast5}{$1}'`)
+out=test_data/test_pod5
+mkdir -p $out
+
+#singularity run  scripts/pod5:0.3.15--pyhdfd78af_0  \
+pod5 convert fast5 ${fast5[$i]}  --output $out/${name[$i]}.pod5

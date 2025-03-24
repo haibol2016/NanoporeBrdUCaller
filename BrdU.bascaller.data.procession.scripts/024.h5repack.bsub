@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#BSUB -n 1  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=1000] # ask for memory 5G
+#BSUB -W 2:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[2-6843]%50"
+#BSUB -q short   # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(33544)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+module load hdf5
+
+single_fast5=(`ls  test_data/000.single_fast5/barcode0*/0/*.fast5`)
+in_dir=(`ls  test_data/000.single_fast5/barcode0*/0/*.fast5 | perl -p -e 's{(.+)/.+}{$1}'`)
+name=(`ls  test_data/000.single_fast5/barcode0*/0/*.fast5 | perl -p -e 's{.+/(.+)}{$1}'`)
+
+out=(`ls  test_data/000.single_fast5/barcode0*/0/*.fast5 | perl -p -e 's{.+?/(barcode\d+).+}{test_data/001.repacked.single.fast5/$1}'`)
+
+mkdir -p ${out[$i]}
+
+h5repack -f GZIP=5 ${in_dir[$i]}/${name[$i]}   ${out[$i]}/${name[$i]}

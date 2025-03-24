@@ -1,0 +1,40 @@
+#!/bin/bash
+
+#BSUB -n 8  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=8000] # ask for memory 5G
+#BSUB -W 24:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1-2]%50"
+#BSUB -q long  # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(195835)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+module load dorado/0.9.1
+module load samtools/1.16.1
+module load minimap2/2.26
+
+ref_fasta=(docs/Mus_musculus.GRCm39.dna.primary_assembly.fa docs/Homo_sapiens-GCA_009914755.4-T2T-unmasked.fa)
+genome=(mouse human)
+
+out=test_data/dorado_basecalled
+bam=(`ls $out/*.bam`)
+name=(`ls $out/*.bam | perl -p -e 's{.+/(.+?).bam}{$1}'`)
+mkdir -p $out
+
+# everthing in one line
+# dorado <commands> | samtools fastq -T "*" | minimap2 -ax map-ont -y ref.fa > some.sam
+
+#dorado  basecaller --no-trim \
+#       -x cuda:0 \
+#       docs/dna_r9.4.1_e8_sup@v3.6  data/BSPS-BrdU_pod5/  > $out/BSPS_BrdU_dorado.bam
+
+#samtools fastq -T "*" ${bam[$i]} > $out/${name[$i]}.fastq
+
+#minimap2 -x map-ont  -d test_data/${genome[$i]}.mmi ${ref_fasta[$i]}
+
+minimap2 -ax map-ont -y -t 8 -B 4 -O 4,24  --sam-hit-only \
+      	 test_data/${genome[$i]}.mmi  $out/${name[$i]}.fastq |samtools view -q 60 - > $out/${name[$i]}.mapq60.sam

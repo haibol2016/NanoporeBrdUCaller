@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#BSUB -n 1  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=4000] # ask for memory 5G
+#BSUB -W 4:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1]"
+#BSUB -q short   # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(901099)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate multiqc1.14
+
+
+in_dir=(results/001.raw.fastqc.out/) 
+out_dir=results/002.multiqc.out
+project=(Nanopore.test_data)
+
+mkdir -p ${out_dir}
+
+multiqc --filename  ${project[$i]}.multiQC  --outdir  ${out_dir}   ${in_dir[$i]}

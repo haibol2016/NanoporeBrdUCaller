@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#BSUB -n 8  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=2000] # ask for memory 5G
+#BSUB -W 4:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1-2]%50"
+#BSUB -q short   # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(33544)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate seurat5
+
+
+single_fast5=(`ls test_data/001.repacked.single.fast5/barcode0*/ -d`)
+out=(`ls test_data/001.repacked.single.fast5/barcode0*/ -d | perl -p -e 's{.+/(barcode\d+).+}{$1}'`)
+outdir=test_data/002.requiggle.5mer.features.out/${out[$i]} 		
+mkdir -p $outdir
+
+Rscript --vanilla  scripts/027.extract.5mer.R ${single_fast5[$i]}  $outdir
+

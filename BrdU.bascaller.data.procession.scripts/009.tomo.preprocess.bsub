@@ -1,0 +1,23 @@
+#!/bin/bash
+
+#BSUB -n 8  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=1000] # ask for memory 5G
+#BSUB -W 4:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1-260]%50"
+#BSUB -q short   # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(33544)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+single_fast5=(`ls data/000.single_fast5/batch*/0/ -d`)
+fastq=data/BSPS-BrdU_basecalled/BSPS_BrdU_dorado.fastq
+
+
+singularity run  scripts/ont-tombo:1.5.1--py37r36h70f9b12_2  \
+  tombo preprocess annotate_raw_with_fastqs \
+  --fast5-basedir ${single_fast5[$i]} \
+  --fastq-filenames $fastq

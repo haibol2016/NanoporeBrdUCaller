@@ -1,0 +1,31 @@
+#!/bin/bash
+
+#BSUB -n 12  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=8000] # ask for memory 5G
+#BSUB -W 72:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1-2]%50"
+#BSUB -q long   # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(33544)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+single_fast5=(`ls test_data/001.repacked.single.fast5/barcode0* -d`)
+ref_fasta=(`ls test_data/resquiggle_data/*.fasta`)
+
+singularity run  scripts/ont-tombo:1.5.1--py37r36h70f9b12_2  \
+  tombo resquiggle --dna \
+  --processes 12 \
+  --ignore-read-locks \
+  --overwrite \
+  --threads-per-process 4 \
+  --sequence-length-range  200 50000 \
+  --signal-length-range 500 500000 \
+  --include-event-stdev \
+  --basecall-group Basecall_1D_000 \
+  --num-most-common-errors 5 \
+  ${single_fast5[$i]}  ${ref_fasta[$i]}
+

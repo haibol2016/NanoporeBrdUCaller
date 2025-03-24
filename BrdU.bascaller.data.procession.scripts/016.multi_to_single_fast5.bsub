@@ -1,0 +1,25 @@
+#!/bin/bash
+
+#BSUB -n 8  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=1000] # ask for memory 5G
+#BSUB -W 4:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1-2]%50"
+#BSUB -q short   # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(33544)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+multi_fast5=(`ls test_data/*.fast5`)
+out_dir=(`ls test_data/*.fast5 | perl -p -e 's{.+/.+?(barcode\d+).+}{$1}'`)
+save_path=test_data/000.single_fast5/${out_dir[$i]}
+mkdir -p $save_path
+
+singularity run  scripts/ont-fast5-api:4.1.3--pyhdfd78af_0  \
+	multi_to_single_fast5 --input_path  ${multi_fast5[$i]} \
+	--save_path  $save_path   \
+        --recursive
+

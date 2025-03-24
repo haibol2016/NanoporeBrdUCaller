@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#BSUB -n 8  # minmal numbers of processors required for a parallel job
+#BSUB -R rusage[mem=1000] # ask for memory 5G
+#BSUB -W 4:00 #limit the job to be finished in 12 hours
+#BSUB -J "fastQC[1]%50"
+#BSUB -q  gpu   # which queue we want to run in
+#BSUB -o logs/out.%J.%I.txt # log
+#BSUB -e logs/err.%J.%I.txt # error
+#BSUB -R "span[hosts=1]" # All hosts on the same chassis"
+##BSUB -w "done(33544)"
+
+i=$(($LSB_JOBINDEX- 1))
+mkdir -p logs
+
+module load dorado/0.9.1
+
+pod5=(`ls data/BSPS-BrdU_pod5/BSPS_BrdU_batch*.pod5`)
+name=(`ls data/BSPS-BrdU_pod5/BSPS_BrdU_batch*.pod5 | perl -p -es'{.+/(BSPS_BrdU_batch\d+).pod5}{$1}'`)
+ref_fasta=data/BrdU_allrefs.fa
+out=data/BSPS-BrdU_basecalled
+mkdir -p $out
+
+module load minimap2/2.26  
+dorado  basecaller --no-trim \
+       -x cuda:0 \
+       docs/dna_r9.4.1_e8_sup@v3.6  data/BSPS-BrdU_pod5/  > $out/BSPS_BrdU_dorado.bam
